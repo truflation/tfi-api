@@ -69,7 +69,12 @@ async function outputResult (request, r, output) {
   output.status.innerHTML = ''
 }
 
-async function doApiRequest (request, output) { // eslint-disable-line no-unused-vars
+class TfiApi {
+  constructor(web3) {
+    this.web3 = web3;
+  }
+
+  async doApiRequest (request, output) { // eslint-disable-line no-unused-vars
   try {
     console.log(request)
     if (request === undefined) {
@@ -148,6 +153,9 @@ async function doApiRequest (request, output) { // eslint-disable-line no-unused
     output.status.innerHTML = string
     output.output.innerHTML = ''
   }
+  }
 }
 
-module.exports = doApiRequest
+module.exports.TfiApi = TfiApi
+
+
