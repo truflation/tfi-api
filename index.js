@@ -1,4 +1,4 @@
-/* global config,ethereum,Web3,web3:writable,cbor,apiAbi,erc20Abi */
+/* global config,web3:writable,cbor,apiAbi,erc20Abi */
 
 function getAccount () {
   if (accounts === undefined) {
@@ -70,92 +70,87 @@ async function outputResult (request, r, output) {
 }
 
 class TfiApi {
-  constructor(web3) {
-    this.web3 = web3;
+  constructor (web3) {
+    this.web3 = web3
   }
 
   async doApiRequest (request, output) { // eslint-disable-line no-unused-vars
-  try {
-    console.log(request)
-    if (request === undefined) {
-      throw Error('no request')
-    }
-    console.log(request.address)
-    if (!web3.utils.isAddress(request.address)) {
-      throw Error('address not valid')
-    }
-    output.status.innerHTML = 'Running ...'
-    const account = getAccount()
-    const api = new web3.eth.Contract(
-      apiAbi, request.address)
-    const linkToken = await api.methods.getChainlinkToken().call()
-    const tokenContract = new web3.eth.Contract(
-      erc20Abi, linkToken
-    )
-    const requestTxn = api.methods.doRequest(
-      request.service ? request.service : '',
-      request.data ? request.data : '',
-      request.keypath ? request.keypath : '',
-      request.abi ? request.abi : '',
-      request.multiplier ? request.multiplier : ''
-    )
-
-
-    const fee = await api.methods.fee().call()
-    if (parseInt(fee) !== 0) {
-      output.status.innerHTML = 'Transferring LINK...'
-      const transfer = tokenContract.methods.transfer(
-        request.address, fee
+    try {
+      if (request === undefined) {
+        throw Error('no request')
+      }
+      if (!web3.utils.isAddress(request.address)) {
+        throw Error('address not valid')
+      }
+      output.status.innerHTML = 'Running ...'
+      const account = getAccount()
+      const api = new web3.eth.Contract(
+        apiAbi, request.address)
+      const linkToken = await api.methods.getChainlinkToken().call()
+      const tokenContract = new web3.eth.Contract(
+        erc20Abi, linkToken
       )
-      await transfer.send({
+      const requestTxn = api.methods.doRequest(
+        request.service ? request.service : '',
+        request.data ? request.data : '',
+        request.keypath ? request.keypath : '',
+        request.abi ? request.abi : '',
+        request.multiplier ? request.multiplier : ''
+      )
+
+      const fee = await api.methods.fee().call()
+      if (parseInt(fee) !== 0) {
+        output.status.innerHTML = 'Transferring LINK...'
+        const transfer = tokenContract.methods.transfer(
+          request.address, fee
+        )
+        await transfer.send({
+          from: account,
+          to: request.address
+        })
+      }
+      output.status.innerHTML = 'Sending request ...'
+      const txn = await requestTxn.send({
         from: account,
         to: request.address
       })
-    }
-    output.status.innerHTML = 'Sending request ...'
-    const txn = await requestTxn.send({
-      from: account,
-      to: request.address
-    })
-    const id = txn.events.ChainlinkRequested.returnValues.id
-    console.log(id)
-    output.status.innerHTML = 'Waiting for response for request id: ' + id
-    const poll = config[window.ethereum.networkVersion]?.poll
-    if (poll !== undefined && poll !== 0) {
-      let r
-      const makeCall = async () => {
-        r = await api.methods.results(id).call()
-        if (r !== null) {
-          console.log('found result', r)
-          outputResult(request, r, output)
-          return
+      const id = txn.events.ChainlinkRequested.returnValues.id
+      console.log(id)
+      output.status.innerHTML = 'Waiting for response for request id: ' + id
+      const poll = config[window.ethereum.networkVersion]?.poll
+      if (poll !== undefined && poll !== 0) {
+        let r
+        const makeCall = async () => {
+          r = await api.methods.results(id).call()
+          if (r !== null) {
+            console.log('found result', r)
+            outputResult(request, r, output)
+            return
+          }
+          console.log('no result - polling')
+          setTimeout(makeCall, poll)
         }
-        console.log('no result - polling')
         setTimeout(makeCall, poll)
+      } else {
+        api.events.ChainlinkFulfilled(
+          {
+            filter: { id }
+          },
+          (error, event) => { console.log('foo', error, event) })
+          .on('data', async (event) => {
+            const r = await api.methods.results(id).call()
+            outputResult(request, r, output)
+          })
       }
-      setTimeout(makeCall, poll)
-    } else {
-      api.events.ChainlinkFulfilled(
-        {
-          filter: { id }
-        },
-        (error, event) => { console.log('foo', error, event) })
-        .on('data', async (event) => {
-          const r = await api.methods.results(id).call()
-          outputResult(request, r, output)
-        })
+    } catch (err) {
+      let string = err.toString()
+      if (string === '[object Object]') {
+        string = JSON.stringify(err)
+      }
+      output.status.innerHTML = string
+      output.output.innerHTML = ''
     }
-  } catch (err) {
-    let string = err.toString()
-    if (string === '[object Object]') {
-      string = JSON.stringify(err)
-    }
-    output.status.innerHTML = string
-    output.output.innerHTML = ''
-  }
   }
 }
 
 module.exports.TfiApi = TfiApi
-
-

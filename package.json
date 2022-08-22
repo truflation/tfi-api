@@ -6,12 +6,20 @@
   "devDependencies": {
     "@types/mocha": "^9.1.1",
     "@types/node": "^18.7.9",
+    "@typescript-eslint/eslint-plugin": "^5.33.1",
+    "@typescript-eslint/parser": "^5.33.1",
+    "eslint": "^8.22.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.2.5",
+    "eslint-plugin-promise": "^6.0.0",
     "mocha": "^10.0.0",
     "ts-mocha": "^10.0.0",
     "typescript": "^4.7.4"
   },
   "scripts": {
-    "test": "ts-mocha test/*.ts"
+    "test": "ts-mocha test/*.ts",
+    "lint": "eslint *.js test/*.ts"
   },
   "dependencies": {
     "assert": "^2.0.0",
