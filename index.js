@@ -1,11 +1,8 @@
 /* global config,web3:writable,cbor,apiAbi,erc20Abi */
-
-function getAccount () {
-  if (accounts === undefined) {
-    throw new Error('No account available - Please connect to wallet')
-  }
-  return accounts[0]
-}
+const abi = require('./abi')
+const config = require('./config')
+const apiAbi = abi.apiAbi
+const erc20Abi = abi.erc20Abi
 
 function hexStringToByteArray (hexString) {
   if (hexString.length % 2 !== 0) {
@@ -70,85 +67,89 @@ async function outputResult (request, r, output) {
 }
 
 class TfiApi {
-  constructor (web3) {
+  constructor (web3, account) {
     this.web3 = web3
+    this.account = account
   }
 
-  async doApiRequest (request, output) { // eslint-disable-line no-unused-vars
-    try {
-      if (request === undefined) {
-        throw Error('no request')
-      }
-      if (!web3.utils.isAddress(request.address)) {
-        throw Error('address not valid')
-      }
-      output.status.innerHTML = 'Running ...'
-      const account = getAccount()
-      const api = new web3.eth.Contract(
-        apiAbi, request.address)
-      const linkToken = await api.methods.getChainlinkToken().call()
-      const tokenContract = new web3.eth.Contract(
-        erc20Abi, linkToken
-      )
-      const requestTxn = api.methods.doRequest(
-        request.service ? request.service : '',
-        request.data ? request.data : '',
-        request.keypath ? request.keypath : '',
-        request.abi ? request.abi : '',
-        request.multiplier ? request.multiplier : ''
-      )
+  setStatus(status) {
+    console.log(status)
+  }
 
-      const fee = await api.methods.fee().call()
-      if (parseInt(fee) !== 0) {
-        output.status.innerHTML = 'Transferring LINK...'
-        const transfer = tokenContract.methods.transfer(
-          request.address, fee
-        )
-        await transfer.send({
-          from: account,
-          to: request.address
-        })
-      }
-      output.status.innerHTML = 'Sending request ...'
-      const txn = await requestTxn.send({
-        from: account,
+  setOutput(output) {
+    console.log(output)
+  }
+
+  async doApiRequest (request) { // eslint-disable-line no-unused-vars
+    const web3 = this.web3
+    if (request === undefined) {
+      throw Error('no request')
+    }
+    if (!web3.utils.isAddress(request.address)) {
+      throw Error('address not valid')
+    }
+    this.setStatus('Running ...')
+    const api = new web3.eth.Contract(
+      apiAbi, request.address)
+    const linkToken = await api.methods.getChainlinkToken().call()
+    const tokenContract = new web3.eth.Contract(
+      erc20Abi, linkToken
+    )
+    const requestTxn = api.methods.doRequest(
+      request.service ? request.service : '',
+      request.data ? request.data : '',
+      request.keypath ? request.keypath : '',
+      request.abi ? request.abi : '',
+      request.multiplier ? request.multiplier : ''
+    )
+    
+    const fee = await api.methods.fee().call()
+    if (parseInt(fee) !== 0) {
+      this.setStatus('Transferring LINK...')
+      const transfer = tokenContract.methods.transfer(
+        request.address, fee
+      )
+      await transfer.send({
+        from: this.account,
         to: request.address
       })
-      const id = txn.events.ChainlinkRequested.returnValues.id
-      console.log(id)
-      output.status.innerHTML = 'Waiting for response for request id: ' + id
-      const poll = config[window.ethereum.networkVersion]?.poll
-      if (poll !== undefined && poll !== 0) {
-        let r
-        const makeCall = async () => {
-          r = await api.methods.results(id).call()
-          if (r !== null) {
-            console.log('found result', r)
-            outputResult(request, r, output)
-            return
-          }
-          console.log('no result - polling')
-          setTimeout(makeCall, poll)
+    }
+    this.setStatus('Sending request ...')
+    const txn = await requestTxn.send({
+      from: this.account,
+      to: request.address
+    })
+    const id = txn.events.ChainlinkRequested.returnValues.id
+    console.log(id)
+    this.setStatus('Waiting for response for request id: ' + id)
+    const chainid = Number(await web3.eth.getChainId())
+    console.log(chainid)
+    const poll = config[chainid]?.poll
+    console.log(config)
+    console.log(poll)
+    if (poll !== undefined && poll !== 0) {
+      let r
+      const makeCall = async () => {
+        r = await api.methods.results(id).call()
+        if (r !== null) {
+          console.log('found result', r)
+          outputResult(request, r, output)
+          return
         }
+        console.log('no result - polling')
         setTimeout(makeCall, poll)
-      } else {
-        api.events.ChainlinkFulfilled(
-          {
-            filter: { id }
-          },
-          (error, event) => { console.log('foo', error, event) })
-          .on('data', async (event) => {
-            const r = await api.methods.results(id).call()
-            outputResult(request, r, output)
-          })
       }
-    } catch (err) {
-      let string = err.toString()
-      if (string === '[object Object]') {
-        string = JSON.stringify(err)
-      }
-      output.status.innerHTML = string
-      output.output.innerHTML = ''
+      setTimeout(makeCall, poll)
+    } else {
+      api.events.ChainlinkFulfilled(
+        {
+          filter: { id }
+        },
+        (error, event) => { console.log('foo', error, event) })
+        .on('data', async (event) => {
+          const r = await api.methods.results(id).call()
+          outputResult(request, r, output)
+        })
     }
   }
 }
