@@ -13,7 +13,7 @@ describe('My function', function () {
   it('should test', function () {
     assert.equal(1, 1)
   })
-  it('hello world',  function() {
+  it('hello world', function () {
     app.doApiRequest({}, undefined)
   })
 })
