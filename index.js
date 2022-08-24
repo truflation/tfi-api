@@ -33,14 +33,11 @@ function decode (data, web3, abi, multiplier) {
   }
   let retval
   if (abi === 'cbor') {
-    console.log('cbor', data)
     const byteArray = hexStringToByteArray(data)
     retval = cbor.decodeFirstSync(byteArray)
   } else if (abi === 'json') {
-    console.log(data)
     const byteArray = hexStringToByteArray(data)
     const string = new TextDecoder().decode(byteArray)
-    console.log(string)
     retval = JSON.parse(string)
   } else {
     retval = web3.eth.abi.decodeParameter(abi, data)
@@ -70,7 +67,6 @@ class TfiApi {
   }
 
   outputResult (request, r) {
-    console.log('outputResult', request, r)
     if (request.abi === 'ipfs' ||
         request.abi === 'ipfs/cbor' ||
         request.abi === 'ipfs/json') {
@@ -122,23 +118,17 @@ class TfiApi {
       to: request.address
     })
     const id = txn.events.ChainlinkRequested.returnValues.id
-    console.log(id)
     this.setStatus('Waiting for response for request id: ' + id)
     const chainid = Number(await web3.eth.getChainId())
-    console.log(chainid)
     const poll = config[chainid]?.poll
-    console.log(config)
-    console.log(poll)
     if (poll !== undefined && poll !== 0) {
       const me = this
       const makeCall = async () => {
         let r = await api.methods.results(id).call()
         while (r === null) {
-          console.log('no result - polling')
           await wait(poll)
           r = await api.methods.results(id).call()
         }
-        console.log('found result', r)
         return me.outputResult(request, r)
       }
       return await makeCall()
@@ -153,7 +143,6 @@ class TfiApi {
           (error, event) => { console.log('foo', error, event) })
           .on('data', async (event) => {
             const r = await api.methods.results(id).call()
-            console.log('found result', r)
           })
         return me.outputResult(request, r)
       }
