@@ -121,8 +121,9 @@ class TfiApi {
     this.setStatus('Waiting for response for request id: ' + id)
     const chainid = Number(await web3.eth.getChainId())
     const poll = config[chainid]?.poll
+    let makeCall
     if (poll !== undefined && poll !== 0) {
-      const makeCall = async () => {
+      makeCall = async () => {
         let r = await api.methods.results(id).call()
         while (r === null) {
           await wait(poll)
@@ -130,9 +131,8 @@ class TfiApi {
         }
         return r
       }
-      return await makeCall()
     } else {
-      async function makeCall () {
+      makeCall = async () => {
         return new Promise((resolve, reject) => {
           api.events.ChainlinkFulfilled(
             {
@@ -147,8 +147,8 @@ class TfiApi {
           })
         })
       }
-      return await makeCall()
     }
+    return this.outputResult(request, await makeCall())
   }
 }
 
