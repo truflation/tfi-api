@@ -122,29 +122,30 @@ class TfiApi {
     const chainid = Number(await web3.eth.getChainId())
     const poll = config[chainid]?.poll
     if (poll !== undefined && poll !== 0) {
-      const me = this
       const makeCall = async () => {
         let r = await api.methods.results(id).call()
         while (r === null) {
           await wait(poll)
           r = await api.methods.results(id).call()
         }
-        return me.outputResult(request, r)
+        return r
       }
       return await makeCall()
     } else {
-      const me = this
       async function makeCall () {
-        let r
-        await api.events.ChainlinkFulfilled(
-          {
-            filter: { id }
-          },
-          (error, event) => { console.log('foo', error, event) })
-          .on('data', async (event) => {
+        return new Promise((resolve, reject) => {
+          api.events.ChainlinkFulfilled(
+            {
+              filter: { id }
+            },
+            (error, events) => {
+              console.log('fired', error, events)
+            }
+          ).once('data', async (event) => {
             const r = await api.methods.results(id).call()
+            resolve(r)
           })
-        return me.outputResult(request, r)
+        })
       }
       return await makeCall()
     }
