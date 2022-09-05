@@ -53,8 +53,7 @@ function decode (data, web3, abi, multiplier) {
 }
 
 class TfiApi {
-  constructor (web3, account) {
-    this.web3 = web3
+  constructor (account) {
     this.account = account
   }
 
@@ -66,7 +65,7 @@ class TfiApi {
     console.log(output)
   }
 
-  outputResult (request, r) {
+  outputResult (web3, request, r) {
     if (request.abi === 'ipfs' ||
         request.abi === 'ipfs/cbor' ||
         request.abi === 'ipfs/json') {
@@ -74,12 +73,11 @@ class TfiApi {
       const s = new TextDecoder().decode(b)
       return `ipfs:${s}`
     }
-    const obj = decode(r, this.web3, request.abi, request.multiplier)
+    const obj = decode(r, web3, request.abi, request.multiplier)
     return JSON.stringify(obj)
   }
 
-  async doApiRequest (request) { // eslint-disable-line no-unused-vars
-    const web3 = this.web3
+  async doApiRequest (web3, request) { // eslint-disable-line no-unused-vars
     if (request === undefined) {
       throw Error('no request')
     }
@@ -148,7 +146,7 @@ class TfiApi {
         })
       }
     }
-    return this.outputResult(request, await makeCall())
+    return this.outputResult(web3, request, await makeCall())
   }
 }
 
