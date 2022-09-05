@@ -1,5 +1,4 @@
 const abi = require('./abi')
-const config = require('./config')
 const apiAbi = abi.apiAbi
 const erc20Abi = abi.erc20Abi
 const cbor = require('cbor')
@@ -53,8 +52,9 @@ function decode (data, web3, abi, multiplier) {
 }
 
 class TfiApi {
-  constructor (account) {
+  constructor (account, poll = 1000) {
     this.account = account
+    this.poll = 1000
   }
 
   setStatus (status) {
@@ -117,8 +117,7 @@ class TfiApi {
     })
     const id = txn.events.ChainlinkRequested.returnValues.id
     this.setStatus('Waiting for response for request id: ' + id)
-    const chainid = Number(await web3.eth.getChainId())
-    const poll = config[chainid]?.poll
+    const poll = this.poll
     let makeCall
     if (poll !== undefined && poll !== 0) {
       makeCall = async () => {
