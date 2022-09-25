@@ -77,6 +77,78 @@ class TfiApi {
     return JSON.stringify(obj)
   }
 
+  async doApiTransferAndRequest (web3, request) { // eslint-disable-line no-unused-vars
+    if (request === undefined) {
+      throw Error('no request')
+    }
+    if (!web3.utils.isAddress(request.address)) {
+      throw Error('address not valid')
+    }
+    this.setStatus('Running ...')
+    const api = new web3.eth.Contract(
+      apiAbi, request.address)
+    const linkToken = await api.methods.getToken().call()
+    const tokenContract = new web3.eth.Contract(
+      erc20Abi, linkToken
+    )
+
+    const requestTxn = api.methods.doTransferAndRequest(
+      request.service ? request.service : '',
+      request.data ? request.data : '',
+      request.keypath ? request.keypath : '',
+      request.abi ? request.abi : '',
+      request.multiplier ? request.multiplier : '',
+      request.fee ? request.fee : '0'
+    )
+
+    if (parseInt(request.fee) !== '0') {
+      this.setStatus('Approve tokens...')
+      const approve = tokenContract.methods.approve(
+        request.address, request.fee
+      )
+      await approve.send({
+        from: this.account,
+        to: request.address
+      })
+    }
+    this.setStatus('Sending request ...')
+    const txn = await requestTxn.send({
+      from: this.account,
+      to: request.address
+    })
+    const id = txn.events.ChainlinkRequested.returnValues.id
+    this.setStatus('Waiting for response for request id: ' + id)
+    const poll = this.poll
+    let makeCall
+    if (poll !== undefined && poll !== 0) {
+      makeCall = async () => {
+        let r = await api.methods.results(id).call()
+        while (r === null) {
+          await wait(poll)
+          r = await api.methods.results(id).call()
+        }
+        return r
+      }
+    } else {
+      makeCall = async () => {
+        return new Promise((resolve, reject) => {
+          api.events.ChainlinkFulfilled(
+            {
+              filter: { id }
+            },
+            (error, events) => {
+              console.log('fired', error, events)
+            }
+          ).once('data', async (event) => {
+            const r = await api.methods.results(id).call()
+            resolve(r)
+          })
+        })
+      }
+    }
+    return this.outputResult(web3, request, await makeCall())
+  }
+
   async doApiRequest (web3, request) { // eslint-disable-line no-unused-vars
     if (request === undefined) {
       throw Error('no request')
@@ -87,7 +159,7 @@ class TfiApi {
     this.setStatus('Running ...')
     const api = new web3.eth.Contract(
       apiAbi, request.address)
-    const linkToken = await api.methods.getChainlinkToken().call()
+    const linkToken = await api.methods.getToken().call()
     const tokenContract = new web3.eth.Contract(
       erc20Abi, linkToken
     )
