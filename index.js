@@ -1,7 +1,7 @@
 const abi = require('./abi')
 const apiAbi = abi.apiAbi
 const erc20Abi = abi.erc20Abi
-const cbor = require('cbor')
+const cbor = require('cbor-web')
 
 const wait = function (ms = 1000) {
   return new Promise(resolve => {
