@@ -126,7 +126,6 @@ class TfiApi {
     const id = txn.events.ChainlinkRequested.returnValues.id
     this.setStatus(`Waiting for response for request id: ${id}`)
     const poll = this.poll
-    this.setStatus(poll)
     let makeCall
     if (poll !== undefined && poll !== 0) {
       this.setDebug('starting polling.....')
