@@ -2,7 +2,6 @@ const abi = require('./abi')
 const apiAbi = abi.apiAbi
 const erc20Abi = abi.erc20Abi
 const cbor = require('cbor-web')
-
 const wait = function (ms = 1000) {
   return new Promise(resolve => {
     setTimeout(resolve, ms)
@@ -52,9 +51,10 @@ function decode (data, web3, abi, multiplier) {
 }
 
 class TfiApi {
-  constructor (account, poll = 1000) {
+  constructor (account, poll = 1000, debug = true) {
     this.account = account
-    this.poll = 1000
+    this.poll = poll
+    this.debug = debug
   }
 
   setStatus (status) {
@@ -63,6 +63,12 @@ class TfiApi {
 
   setOutput (output) {
     console.log(output)
+  }
+
+  setDebug (output) {
+    if (this.debug) {
+      console.log(output)
+    }
   }
 
   outputResult (web3, request, r) {
@@ -74,6 +80,7 @@ class TfiApi {
       return `ipfs:${s}`
     }
     const obj = decode(r, web3, request.abi, request.multiplier)
+    console.log(obj)
     return JSON.stringify(obj)
   }
 
@@ -117,16 +124,20 @@ class TfiApi {
       to: request.address
     })
     const id = txn.events.ChainlinkRequested.returnValues.id
-    this.setStatus('Waiting for response for request id: ' + id)
+    this.setStatus(`Waiting for response for request id: ${id}`)
     const poll = this.poll
+    this.setStatus(poll)
     let makeCall
     if (poll !== undefined && poll !== 0) {
+      this.setDebug('starting polling.....')
       makeCall = async () => {
         let r = await api.methods.results(id).call()
         while (r === null) {
+          this.setDebug('polling....')
           await wait(poll)
           r = await api.methods.results(id).call()
         }
+        this.setDebug(r)
         return r
       }
     } else {
@@ -141,6 +152,7 @@ class TfiApi {
             }
           ).once('data', async (event) => {
             const r = await api.methods.results(id).call()
+            this.setDebug(r)
             resolve(r)
           })
         })
