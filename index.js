@@ -61,10 +61,6 @@ class TfiApi {
     console.log(status)
   }
 
-  setOutput (output) {
-    console.log(output)
-  }
-
   setDebug (output) {
     if (this.debug) {
       console.log(output)
@@ -157,6 +153,7 @@ class TfiApi {
         })
       }
     }
+    this.setStatus('')
     return this.outputResult(web3, request, await makeCall())
   }
 
