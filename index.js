@@ -133,6 +133,7 @@ class TfiApi {
           r = await api.methods.results(id).call()
         }
         this.setDebug(r)
+        this.setStatus('')
         return r
       }
     } else {
@@ -148,12 +149,12 @@ class TfiApi {
           ).once('data', async (event) => {
             const r = await api.methods.results(id).call()
             this.setDebug(r)
+            this.setStatus('')
             resolve(r)
           })
         })
       }
     }
-    this.setStatus('')
     return this.outputResult(web3, request, await makeCall())
   }
 
