@@ -96,12 +96,12 @@ class TfiApi {
     )
 
     const requestTxn = api.methods.doTransferAndRequest(
-      request.service ? request.service : '',
-      request.data ? request.data : '',
-      request.keypath ? request.keypath : '',
-      request.abi ? request.abi : '',
-      request.multiplier ? request.multiplier : '',
-      request.fee ? request.fee : '0'
+      request.service ?? '',
+      request.data ?? '',
+      request.keypath ?? '',
+      request.abi ?? '',
+      request.multiplier ?? '',
+      request.fee ?? '0'
     )
 
     if (parseInt(request.fee) !== '0') {
@@ -173,11 +173,11 @@ class TfiApi {
       erc20Abi, linkToken
     )
     const requestTxn = api.methods.doRequest(
-      request.service ? request.service : '',
-      request.data ? request.data : '',
-      request.keypath ? request.keypath : '',
-      request.abi ? request.abi : '',
-      request.multiplier ? request.multiplier : ''
+      request.service ?? '',
+      request.data ?? '',
+      request.keypath ?? '',
+      request.abi ?? '',
+      request.multiplier ?? ''
     )
 
     const fee = await api.methods.fee().call()
