@@ -51,7 +51,7 @@ function decode (data, web3, abi, multiplier) {
 }
 
 class TfiApi {
-  constructor (account, poll = 1000, debug = true) {
+  constructor (account, poll = 1000, debug = false) {
     this.account = account
     this.poll = poll
     this.debug = debug
@@ -80,6 +80,11 @@ class TfiApi {
     return JSON.stringify(obj)
   }
 
+  function stringify(x) {
+    return (typeof x == "object") ?
+      JSON.stringify(x) : x
+  }
+
   async doApiTransferAndRequest (web3, request) { // eslint-disable-line no-unused-vars
     if (request === undefined) {
       throw Error('no request')
@@ -97,7 +102,7 @@ class TfiApi {
 
     const requestTxn = api.methods.doTransferAndRequest(
       request.service ?? '',
-      JSON.stringify(request.data ?? ''),
+      stringify(request.data ?? ''),
       request.keypath ?? '',
       request.abi ?? '',
       request.multiplier ?? '',
@@ -174,7 +179,7 @@ class TfiApi {
     )
     const requestTxn = api.methods.doRequest(
       request.service ?? '',
-      JSON.stringify(request.data ?? ''),
+      stringify(request.data ?? ''),
       request.keypath ?? '',
       request.abi ?? '',
       request.multiplier ?? ''
