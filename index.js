@@ -50,6 +50,11 @@ function decode (data, web3, abi, multiplier) {
   return retval
 }
 
+function stringify(x) {
+  return (typeof x == "object") ?
+    JSON.stringify(x) : x
+}
+
 class TfiApi {
   constructor (account, poll = 1000, debug = false) {
     this.account = account
@@ -78,11 +83,6 @@ class TfiApi {
     const obj = decode(r, web3, request.abi, request.multiplier)
     console.log(obj)
     return JSON.stringify(obj)
-  }
-
-  function stringify(x) {
-    return (typeof x == "object") ?
-      JSON.stringify(x) : x
   }
 
   async doApiTransferAndRequest (web3, request) { // eslint-disable-line no-unused-vars
