@@ -97,7 +97,7 @@ class TfiApi {
 
     const requestTxn = api.methods.doTransferAndRequest(
       request.service ?? '',
-      request.data ?? '',
+      JSON.stringify(request.data ?? ''),
       request.keypath ?? '',
       request.abi ?? '',
       request.multiplier ?? '',
@@ -174,7 +174,7 @@ class TfiApi {
     )
     const requestTxn = api.methods.doRequest(
       request.service ?? '',
-      request.data ?? '',
+      JSON.stringify(request.data ?? ''),
       request.keypath ?? '',
       request.abi ?? '',
       request.multiplier ?? ''
